@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Guitarra</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0f1b2d">
+<style>
+:root{--bg:#0f1b2d;--card:#172640;--line:#2a3d5e;--tx:#eef2f8;--mut:#9fb0c9;--ac:#e0b458;--ok:#5fd3a5;--bad:#ef7d6b;box-sizing:border-box}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+h1,h2,.big{font-family:Georgia,"Times New Roman",serif;font-weight:600}
+header{padding:18px 16px 8px;text-align:center}
+h1{margin:0;font-size:26px;color:var(--ac)}
+nav{display:flex;gap:6px;padding:8px 10px;overflow-x:auto;justify-content:center;position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:0 0 auto;background:transparent;color:var(--mut);border:1px solid var(--line);padding:9px 14px;border-radius:20px;font-size:15px;cursor:pointer}
+nav button.on{background:var(--ac);color:#1b1608;border-color:var(--ac);font-weight:600}
+main{max-width:520px;margin:0 auto;padding:12px 16px 40px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.big{font-size:84px;text-align:center;line-height:1;margin:6px 0}
+.mut{color:var(--mut);font-size:14px}
+.c{text-align:center}
+.meter{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,var(--bad),var(--ac) 35%,var(--ok) 50%,var(--ac) 65%,var(--bad));margin:18px 6px 6px}
+.needle{position:absolute;top:-6px;width:4px;height:28px;background:#fff;border-radius:2px;left:50%;transition:left .12s}
+.strings{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:14px}
+.strings button,.chip{background:#0f1b2d;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 0;font-size:15px;cursor:pointer}
+.strings button.hit{border-color:var(--ok);color:var(--ok)}
+.mic{width:100%;margin-top:6px;background:var(--ac);color:#1b1608;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;cursor:pointer}
+.mic.live{background:var(--ok)}
+.status{min-height:48px;text-align:center;margin-top:12px;font-size:18px}
+.good{color:var(--ok);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{padding:8px 14px}.chip.on{background:var(--ac);color:#1b1608;border-color:var(--ac)}
+.steps{display:flex;gap:6px;justify-content:center;margin:10px 0}
+.steps span{width:46px;padding:8px 0;text-align:center;border:1px solid var(--line);border-radius:10px}
+.steps span.now{border-color:var(--ac)}.steps span.done{background:var(--ok);color:#06251a;border-color:var(--ok)}
+.steps.s span{width:34px;padding:8px 0;font-size:20px}.steps.s small{display:block;font-size:11px;color:var(--mut)}
+.song h3{margin:0 0 4px;font-size:18px}
+.prog{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.prog b{background:#0f1b2d;border:1px solid var(--ac);color:var(--ac);border-radius:8px;padding:3px 10px}
+a{color:var(--ac)}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.dot{width:60px;height:60px;border-radius:50%;background:var(--line);margin:16px auto}
+.dot.tick{background:var(--ac)}
+@media(prefers-reduced-motion:reduce){.needle{transition:none}}
+button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:2px}
+</style>
+</head>
+<body>
+<header><h1>Mi Guitarra</h1><div class="mut">Afina, aprende y toca</div></header>
+<nav id="nav">
+<button data-t="afinador" class="on">Afinador</button>
+<button data-t="aprender">Aprende a tocar</button>
+<button data-t="rasgueo">Rasgueo</button>
+<button data-t="canciones">Canciones</button>
+<button data-t="metro">Metrónomo</button>
+</nav>
+<main>
+
+<section id="afinador" class="on">
+<div class="card">
+<div class="big" id="note">–</div>
+<div class="c mut" id="hz">Toca una cuerda</div>
+<div class="meter"><div class="needle" id="needle"></div></div>
+<div class="c mut" id="cents">0 cents</div>
+<div class="strings" id="strs"></div>
+<div class="c mut" style="margin-top:8px">Toca una cuerda para escuchar su sonido de referencia</div>
+</div>
+<div class="status" id="tstatus">Pulsa el botón y toca una cuerda.</div>
+<button class="mic" id="tmic">🎙 Escuchar asistente</button>
+</section>
+
+<section id="aprender">
+<div class="card">
+<h2 style="margin-top:0">Aprende un acorde</h2>
+<div class="mut">Elige un acorde. Toca las cuerdas una por una, de la más grave a la más aguda, y el asistente te dice si cada nota suena bien.</div>
+<div class="chips" id="chords"></div>
+<div class="c" id="diagram"></div>
+<div class="c mut" id="finger"></div>
+<div class="steps" id="steps"></div>
+<div class="status" id="lstatus">Elige un acorde y pulsa el micrófono.</div>
+<button class="mic" id="lmic">🎙 Tocar con el asistente</button>
+</div>
+</section>
+
+<section id="rasgueo">
+<div class="card c"><h2 style="margin-top:0">Rasgueo</h2>
+<div class="mut">↓ abajo · ↑ arriba · punto = silencio. Cuenta "1 y 2 y 3 y 4 y" y mueve la mano siempre.</div>
+<div class="chips" id="spats" style="justify-content:center"></div>
+<div class="steps s" id="sgrid"></div>
+<div class="big" style="font-size:48px" id="sbpmv">80</div><div class="mut">pulsos por minuto</div>
+<input type="range" id="sbpm" min="50" max="140" value="80" aria-label="Velocidad del rasgueo">
+<button class="mic" id="sbtn" style="margin-top:14px">▶ Tocar rasgueo</button>
+<div class="mut" style="margin-top:8px">Suena un acorde de Mi menor. Practica el mismo ritmo con cualquier acorde.</div></div>
+</section>
+
+<section id="canciones">
+<div class="card mut">Canciones cristianas para guitarra en español. Te dejo los acordes básicos de cada una y un enlace para buscarla y tocar con el video. Las letras no están incluidas.</div>
+<div id="songs"></div>
+</section>
+
+<section id="metro">
+<div class="card c">
+<h2 style="margin-top:0">Metrónomo</h2>
+<div class="dot" id="dot"></div>
+<div class="big" style="font-size:56px" id="bpmv">80</div>
+<div class="mut">pulsos por minuto</div>
+<input type="range" id="bpm" min="40" max="200" value="80" aria-label="Pulsos por minuto">
+<button class="mic" id="mbtn" style="margin-top:14px">Empezar</button>
+</div>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const NAMES=['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+const noteName=m=>NAMES[((m%12)+12)%12]+Math.floor(m/12-1);
+const mFromF=f=>69+12*Math.log2(f/440);
+const fFromM=m=>440*Math.pow(2,(m-69)/12);
+const OPEN=[40,45,50,55,59,64];
+const SNAME=['Mi','La','Re','Sol','Si','Mi'];
+
+/* Pestañas */
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  stopAll();
+  document.querySelectorAll('#nav button,section').forEach(e=>e.classList.remove('on'));
+  b.classList.add('on');$('#'+b.dataset.t).classList.add('on');
+});
+
+/* Micrófono + detección de nota */
+let ctx,stream,an,timer,buf;
+async function startMic(cb){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){return false}
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended')await ctx.resume();
+  const src=ctx.createMediaStreamSource(stream);
+  an=ctx.createAnalyser();an.fftSize=4096;src.connect(an);
+  buf=new Float32Array(an.fftSize);
+  timer=setInterval(()=>{an.getFloatTimeDomainData(buf);cb(detect(buf,ctx.sampleRate))},90);
+  return true;
+}
+function stopMic(){
+  clearInterval(timer);timer=null;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+}
+function detect(b,sr){
+  const n=b.length;let e=0;
+  for(let i=0;i<n;i++)e+=b[i]*b[i];
+  if(Math.sqrt(e/n)<0.012)return -1;
+  const minL=Math.floor(sr/420),maxL=Math.floor(sr/65);
+  const c=new Float32Array(maxL+2);
+  for(let l=minL-1;l<=maxL+1;l++){let s=0;for(let i=0;i<n-l;i++)s+=b[i]*b[i+l];c[l]=s}
+  let d=minL;while(d<maxL&&c[d]>c[d+1])d++;
+  let mx=-1,mi=-1;
+  for(let l=d;l<=maxL;l++)if(c[l]>mx){mx=c[l];mi=l}
+  if(mi<0||mx/e<0.4)return -1;
+  const a=c[mi-1],bb=c[mi],g=c[mi+1],den=a-2*bb+g;
+  const sh=den?(a-g)/(2*den):0;
+  return sr/(mi+sh);
+}
+function speak(t){
+  try{const u=new SpeechSynthesisUtterance(t);u.lang='es-ES';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}
+}
+function beep(f,dur=1.2){
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type='triangle';o.frequency.value=f;o.connect(g);g.connect(ctx.destination);
+  g.gain.setValueAtTime(0.4,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+  o.start();o.stop(ctx.currentTime+dur);
+}
+
+/* Afinador */
+const sb=$('#strs');
+OPEN.forEach((m,i)=>{
+  const b=document.createElement('button');b.id='s'+i;b.innerHTML=SNAME[i]+'<br><small class="mut">'+(6-i)+'ª</small>';
+  b.onclick=()=>beep(fFromM(m));sb.appendChild(b);
+});
+let tOn=false,okCount=0,lastSpoke=0;
+$('#tmic').onclick=async()=>{
+  if(tOn){stopAll();return}
+  const ok=await startMic(onTune);
+  if(!ok){$('#tstatus').textContent='No pude usar el micrófono. Permite el acceso en tu navegador.';return}
+  tOn=true;$('#tmic').textContent='⏹ Detener asistente';$('#tmic').classList.add('live');
+  $('#tstatus').textContent='Escuchando… toca una cuerda.';
+};
+function onTune(f){
+  if(f<0){okCount=0;return}
+  const m=mFromF(f);
+  let best=0,bd=1e9;
+  OPEN.forEach((o,i)=>{const d=Math.abs(m-o);if(d<bd){bd=d;best=i}});
+  const cents=Math.round((m-OPEN[best])*100);
+  $('#note').textContent=SNAME[best];
+  $('#hz').textContent=Math.round(f*10)/10+' Hz · cuerda '+(6-best)+' ('+noteName(OPEN[best])+')';
+  $('#cents').textContent=(cents>0?'+':'')+cents+' cents';
+  $('#needle').style.left=(50+Math.max(-50,Math.min(50,cents))*0.9)+'%';
+  document.querySelectorAll('.strings button').forEach((b,i)=>b.classList.toggle('hit',i===best&&Math.abs(cents)<=6));
+  const s=$('#tstatus');
+  if(Math.abs(cents)<=6){
+    okCount++;
+    s.innerHTML='<span class="good">Está muy bien, está afinada ✅</span>';
+    if(okCount>=4&&Date.now()-lastSpoke>4000){lastSpoke=Date.now();speak('Está muy bien, está afinada')}
+  }else{
+    okCount=0;
+    s.textContent=cents<0?'Está grave. Aprieta un poquito la clavija.':'Está aguda. Afloja un poquito la clavija.';
+  }
+}
+
+/* Aprender */
+const CH={
+  Em:{f:[0,2,2,0,0,0],t:'Dedos 2 y 3 en la cuerda 5 y 4, traste 2.'},
+  Am:{f:[-1,0,2,2,1,0],t:'No toques la 6ª. Dedos en traste 2 (cuerdas 4 y 3) y traste 1 (cuerda 2).'},
+  C:{f:[-1,3,2,0,1,0],t:'No toques la 6ª. Traste 3 en la 5ª, traste 2 en la 4ª, traste 1 en la 2ª.'},
+  G:{f:[3,2,0,0,0,3],t:'Traste 3 en la 6ª y la 1ª, traste 2 en la 5ª.'},
+  D:{f:[-1,-1,0,2,3,2],t:'Toca solo las 4 cuerdas de abajo. Traste 2 en la 3ª y la 1ª, traste 3 en la 2ª.'},
+  E:{f:[0,2,2,1,0,0],t:'Traste 2 en la 5ª y la 4ª, traste 1 en la 3ª.'},
+  A:{f:[-1,0,2,2,2,0],t:'No toques la 6ª. Traste 2 en las cuerdas 4, 3 y 2.'}
+};
+let cur=null,seq=[],pos=0,lOn=false,hold=0;
+const cb=$('#chords');
+Object.keys(CH).forEach(k=>{
+  const b=document.createElement('button');b.className='chip';b.textContent=k;
+  b.onclick=()=>pick(k);cb.appendChild(b);
+});
+function pick(k){
+  stopAll();cur=k;
+  document.querySelectorAll('#chords .chip').forEach(c=>c.classList.toggle('on',c.textContent===k));
+  const fr=CH[k].f;
+  seq=[];fr.forEach((x,i)=>{if(x>=0)seq.push({i,m:OPEN[i]+x})});
+  pos=0;drawDiagram(fr);$('#finger').textContent=CH[k].t;drawSteps();
+  $('#lstatus').textContent='Pulsa el micrófono y toca cada cuerda.';
+}
+function drawDiagram(fr){
+  let s='<svg viewBox="0 0 160 150" width="200" role="img" aria-label="Diagrama del acorde"><g stroke="#9fb0c9" stroke-width="1.5">';
+  for(let i=0;i<6;i++)s+='<line x1="'+(20+i*24)+'" y1="30" x2="'+(20+i*24)+'" y2="140"/>';
+  for(let j=0;j<5;j++)s+='<line x1="20" y1="'+(30+j*27.5)+'" x2="140" y2="'+(30+j*27.5)+'"/>';
+  s+='</g><rect x="20" y="27" width="120" height="5" fill="#eef2f8"/>';
+  fr.forEach((x,i)=>{
+    const cx=20+i*24;
+    if(x<0)s+='<text x="'+cx+'" y="20" fill="#ef7d6b" font-size="14" text-anchor="middle">×</text>';
+    else if(x===0)s+='<circle cx="'+cx+'" cy="15" r="5" fill="none" stroke="#eef2f8" stroke-width="2"/>';
+    else s+='<circle cx="'+cx+'" cy="'+(30+x*27.5-13)+'" r="9" fill="#e0b458"/>';
+  });
+  $('#diagram').innerHTML=s+'</svg>';
+}
+function drawSteps(){
+  $('#steps').innerHTML=seq.map((q,j)=>'<span class="'+(j<pos?'done':j===pos?'now':'')+'">'+SNAME[q.i]+'<br><small>'+(6-q.i)+'ª</small></span>').join('');
+}
+$('#lmic').onclick=async()=>{
+  if(lOn){stopAll();return}
+  if(!cur){$('#lstatus').textContent='Primero elige un acorde.';return}
+  const ok=await startMic(onLearn);
+  if(!ok){$('#lstatus').textContent='No pude usar el micrófono. Permite el acceso en tu navegador.';return}
+  lOn=true;pos=0;hold=0;drawSteps();
+  $('#lmic').textContent='⏹ Detener';$('#lmic').classList.add('live');
+  $('#lstatus').textContent='Toca la cuerda '+(6-seq[0].i)+' ('+SNAME[seq[0].i]+')…';
+};
+function onLearn(f){
+  if(f<0||pos>=seq.length){hold=0;return}
+  const m=mFromF(f),t=seq[pos].m;
+  if(Math.abs(m-t)<0.45){
+    if(++hold>=3){
+      hold=0;pos++;drawSteps();
+      if(pos>=seq.length){
+        $('#lstatus').innerHTML='<span class="good">¡Muy bien! Ahora toca el acorde completo 🎸</span>';
+        speak('¡Muy bien! Lo lograste');
+      }else $('#lstatus').textContent='Bien. Ahora la cuerda '+(6-seq[pos].i)+' ('+SNAME[seq[pos].i]+')…';
+    }
+  }else{
+    hold=0;
+    $('#lstatus').textContent=Math.abs(m-t)<2?'Casi. Revisa la posición del dedo.':'Esa nota no es. Busca la cuerda '+(6-seq[pos].i)+'.';
+  }
+}
+
+/* Canciones */
+const SONGS=[
+  ['Sublime gracia','Tono sugerido: G','G · C · G · D'],
+  ['Cuán grande es Él','Tono sugerido: G','G · C · D · Em'],
+  ['Santo, santo, santo','Tono sugerido: D','D · G · A · Bm'],
+  ['Tu fidelidad','Tono sugerido: G','G · C · D'],
+  ['Rey de reyes','Tono sugerido: D','D · A · Bm · G'],
+  ['Grande es tu fidelidad','Tono sugerido: C','C · F · G · Am']
+];
+$('#songs').innerHTML=SONGS.map(s=>'<div class="card song"><h3>'+s[0]+'</h3><div class="mut">'+s[1]+'</div><div class="prog">'+s[2].split(' · ').map(c=>'<b>'+c+'</b>').join('')+'</div><a target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query='+encodeURIComponent(s[0]+' cristiana guitarra acordes tutorial')+'">Buscar tutorial en YouTube</a></div>').join('')+
+'<div class="card mut">Los acordes son una guía básica. Cada versión puede cambiar el tono. Practica los acordes en la pestaña "Aprende a tocar".</div>';
+
+/* Metrónomo */
+let mt=null;
+$('#bpm').oninput=e=>{$('#bpmv').textContent=e.target.value;if(mt){stopMetro();startMetro()}};
+function startMetro(){
+  const ms=60000/$('#bpm').value;let n=0;
+  const tick=()=>{beep(n%4===0?1200:800,0.08);n++;const d=$('#dot');d.classList.add('tick');setTimeout(()=>d.classList.remove('tick'),90)};
+  tick();mt=setInterval(tick,ms);$('#mbtn').textContent='Parar';
+}
+function stopMetro(){clearInterval(mt);mt=null;$('#mbtn').textContent='Empezar'}
+$('#mbtn').onclick=()=>mt?stopMetro():startMetro();
+
+/* Rasgueo */
+const PATS={'Básico':'D - D - D - D -','Pop':'D - D U - U D U','Alabanza':'D - D U D U D U','Balada':'D - - U D - D U'};
+let sp='Pop',st=null,si=0;
+Object.keys(PATS).forEach(k=>{
+  const b=document.createElement('button');b.className='chip'+(k===sp?' on':'');b.textContent=k;
+  b.onclick=()=>{sp=k;document.querySelectorAll('#spats .chip').forEach(c=>c.classList.toggle('on',c.textContent===k));drawStrum(-1)};
+  $('#spats').appendChild(b);
+});
+function drawStrum(a){
+  $('#sgrid').innerHTML=PATS[sp].split(' ').map((x,i)=>'<span class="'+(i===a?'now':'')+'">'+(x==='D'?'↓':x==='U'?'↑':'·')+'<small>'+(i%2?'y':i/2+1)+'</small></span>').join('');
+}
+drawStrum(-1);
+function strum(d){
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended')ctx.resume();
+  const ms=[40,47,52,55,59,64],o=d==='D'?ms:ms.slice(2).reverse();
+  o.forEach((m,i)=>{
+    const t=ctx.currentTime+i*0.012,os=ctx.createOscillator(),g=ctx.createGain();
+    os.type='triangle';os.frequency.value=fFromM(m);os.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(d==='D'?0.16:0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    os.start(t);os.stop(t+0.5);
+  });
+}
+function stopStrum(){clearInterval(st);st=null;si=0;$('#sbtn').textContent='▶ Tocar rasgueo';drawStrum(-1)}
+$('#sbtn').onclick=()=>{
+  if(st){stopStrum();return}
+  const p=PATS[sp].split(' ');si=0;
+  const step=()=>{drawStrum(si);if(p[si]!=='-')strum(p[si]);si=(si+1)%p.length};
+  step();st=setInterval(step,30000/$('#sbpm').value);$('#sbtn').textContent='⏹ Parar';
+};
+$('#sbpm').oninput=e=>{$('#sbpmv').textContent=e.target.value;if(st){stopStrum();$('#sbtn').click()}};
+
+function stopAll(){
+  stopMic();stopMetro();stopStrum();
+  tOn=false;lOn=false;
+  $('#tmic').textContent='🎙 Escuchar asistente';$('#tmic').classList.remove('live');
+  $('#lmic').textContent='🎙 Tocar con el asistente';$('#lmic').classList.remove('live');
+}
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
